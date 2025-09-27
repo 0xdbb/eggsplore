@@ -4,3 +4,5 @@ bin/main
 bin/**
 tmp/**
 .env
+**/node_modules
+**/.next
