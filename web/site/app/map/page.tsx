@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowLeft, MapPin, Menu, X } from "lucide-react";
+import { ArrowLeft, MapPin, X, Egg as EggIcon, Hammer, Wrench, Shield, Crosshair } from "lucide-react";
 import Image from "next/image";
 import { useAuthStore } from "../../lib/store";
 // MapLibre styles
@@ -24,6 +24,12 @@ export default function MapPage() {
   const dragStartHeight = useRef<number>(0);
   const [userPos, setUserPos] = useState<{ latitude: number; longitude: number } | null>(null);
   const xp = useAuthStore((s) => s.user?.xp ?? 0);
+  const addEgg = useAuthStore((s) => s.addEgg);
+  const eggs = useAuthStore((s) => s.eggs);
+  const user = useAuthStore((s) => s.user);
+  const [showDropModal, setShowDropModal] = useState(false);
+  const [eggType, setEggType] = useState<"bunny" | "dragon" | null>(null);
+  const [activePanel, setActivePanel] = useState<"eggs" | "inventory">("eggs");
 
   // Hide global header logo on map page
   useEffect(() => {
@@ -117,19 +123,13 @@ export default function MapPage() {
       <div className="absolute top-4 left-4 z-30">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 rounded-full px-4 py-2 bg-white/10 border border-white/20 text-white backdrop-blur-sm hover:bg-white/20 transition-colors text-sm font-semibold shadow-soft"
+          className="inline-flex items-center gap-2 rounded-full px-4 py-2 bg-white/40 border border-white/40 text-white backdrop-blur-sm hover:bg-white/50 transition-colors text-sm font-semibold shadow-soft"
         >
           <ArrowLeft className="w-4 h-4" /> Home
         </Link>
       </div>
 
-      {/* Drawer toggle (mobile) */}
-      <button
-        onClick={() => setDrawerOpen((v) => !v)}
-        className="md:hidden absolute bottom-6 right-4 z-30 inline-flex items-center gap-2 rounded-full px-4 py-2 bg-card border border-border text-foreground hover:bg-white/10 transition-colors text-sm font-semibold shadow-soft"
-      >
-        <Menu className="w-4 h-4" /> Panel
-      </button>
+      {/* Removed mobile drawer toggle per design */}
 
       {/* DeckGL + Map */}
       <DeckGL
@@ -153,51 +153,102 @@ export default function MapPage() {
         <span className="font-semibold">{xp}</span>
       </div>
 
-      {/* Floating Add/Drop Egg button */}
+      {/* Floating Add/Drop Egg button with hover-expand */
+      }
       <button
-        className="absolute right-4 bottom-24 md:bottom-8 z-30 inline-flex items-center gap-2 rounded-full px-5 py-3 bg-gradient-to-r from-rose-400 via-pink-400 to-amber-300 text-white font-semibold shadow-2xl hover:scale-105 transition-transform"
+        className="group absolute right-4 bottom-24 md:bottom-8 z-30 inline-flex items-center rounded-full px-3 py-1 bg-gradient-to-r from-rose-400 via-pink-400 to-amber-300 text-white font-semibold shadow-2xl transition-[padding,opacity] hover:pr-5 hover:pl-4"
         onClick={() => {
           // Placeholder: open a creation flow; for now, center on user
+          setShowDropModal(true);
+        }}
+      >
+        <MapPin className="w-6 h-6" />
+        <span className="ml-2 overflow-hidden max-w-0 opacity-0 transition-all duration-200 ease-out group-hover:max-w-[120px] group-hover:opacity-100">
+          Drop Egg
+        </span>
+      </button>
+
+      {/* Center on user button */}
+      <button
+        className="absolute left-4 bottom-24 md:bottom-8 z-30 inline-flex items-center rounded-full p-3 bg-card border border-border text-foreground shadow-soft hover:bg-white/10"
+        onClick={() => {
           if (userPos) {
             setViewState((vs: any) => ({ ...vs, latitude: userPos.latitude, longitude: userPos.longitude, zoom: 15 }));
           }
         }}
+        aria-label="Center on me"
       >
-        <MapPin className="w-4 h-4" /> Drop Egg
+        <Crosshair className="w-4 h-4" />
       </button>
 
-      {/* Desktop drawer (left side) */}
-      <aside
-        className={`hidden md:flex flex-col gap-4 absolute top-0 left-0 h-full w-80 p-4 bg-card border-r border-border z-20 transition-transform ${
-          drawerOpen ? "translate-x-0" : "-translate-x-80"
-        }`}
-      >
-        <div className="flex items-center justify-between">
-          <div className="inline-flex items-center gap-2 text-sm text-foreground">
-            <Image src="/logo.png" alt="Eggsplore" width={18} height={18} className="rounded-sm border border-border" />
-            <span className="text-xs">Panel</span>
-          </div>
-          <button
-            onClick={() => setDrawerOpen(false)}
-            className="hidden md:inline-flex rounded-md p-1.5 bg-white/10 border border-white/20 text-white hover:bg-white/20"
-            aria-label="Close panel"
+      {/* Drop Egg Modal */}
+      {showDropModal && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm flex items-center justify-center px-4"
+          onClick={() => setShowDropModal(false)}
+        >
+          <div
+            className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-game p-6"
+            onClick={(e) => e.stopPropagation()}
           >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="space-y-3 text-sm text-foreground overflow-y-auto pr-2">
-          <div className="p-3 rounded-xl bg-background border border-border">
-            <div className="font-semibold mb-1">Golden Egg</div>
-            <div className="text-xs text-muted-foreground">San Francisco • 120m away</div>
+            <button
+              className="absolute top-3 right-3 rounded-md p-1.5 bg-white/10 border border-white/20 text-white hover:bg-white/20"
+              onClick={() => setShowDropModal(false)}
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <h3 className="text-xl font-semibold mb-4">Select Egg Type</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setEggType("bunny")}
+                className={`flex flex-col items-center gap-2 rounded-2xl border p-4 transition-colors ${eggType === "bunny" ? "border-pink-300 bg-white/10" : "border-border bg-background"}`}
+              >
+                <EggIcon className="w-6 h-6 text-rose-300" />
+                <span className="text-sm">Bunny Egg</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setEggType("dragon")}
+                className={`flex flex-col items-center gap-2 rounded-2xl border p-4 transition-colors ${eggType === "dragon" ? "border-amber-300 bg-white/10" : "border-border bg-background"}`}
+              >
+                <EggIcon className="w-6 h-6 text-amber-300" />
+                <span className="text-sm">Dragon Egg</span>
+              </button>
+            </div>
+            <div className="mt-6 text-right">
+              <button
+                type="button"
+                disabled={!eggType || !userPos}
+                onClick={() => {
+                  if (!eggType || !userPos) return;
+                  const id = String(Date.now());
+                  addEgg({
+                    id,
+                    ownerId: (user?.id as string) || "me",
+                    title: eggType === "bunny" ? "Bunny Egg" : "Dragon Egg",
+                    description: undefined,
+                    coords: { latitude: userPos.latitude, longitude: userPos.longitude },
+                    createdAt: new Date().toISOString(),
+                    color: eggType === "bunny" ? "rose" : "amber",
+                    rarity: "common",
+                  });
+                  setViewState((vs: any) => ({ ...vs, latitude: userPos.latitude, longitude: userPos.longitude, zoom: 16 }));
+                  setShowDropModal(false);
+                }}
+                className={`rounded-full px-5 py-2 bg-gradient-to-r from-rose-400 via-pink-400 to-amber-300 text-white font-semibold shadow-2xl ${!eggType || !userPos ? "opacity-60" : "hover:scale-105"} transition-transform`}
+              >
+                Drop Here
+              </button>
+            </div>
           </div>
-          <div className="p-3 rounded-xl bg-background border border-border">
-            <div className="font-semibold mb-1">Mystic Bunny Nest</div>
-            <div className="text-xs text-muted-foreground">Waterfront • 350m away</div>
-          </div>
         </div>
-      </aside>
+      )}
 
-      {/* Mobile/Tablet drawer (bottom) - draggable height */}
+      {/* Desktop side panel removed per design */}
+
+      {/* Mobile/Tablet drawer (bottom) - draggable height with panels */}
       <aside
         className={`md:hidden absolute left-0 right-0 bottom-0 px-4 pt-2 pb-4 bg-card border-t border-border z-20 transition-transform`}
         style={{ height: drawerOpen ? mobileHeight : 48 }}
@@ -248,24 +299,59 @@ export default function MapPage() {
             <Image src="/logo.png" alt="Eggsplore" width={16} height={16} className="rounded-sm border border-border" />
             <span className="text-xs">Nearby Eggs</span>
           </div>
-          <button
-            onClick={() => setDrawerOpen(false)}
-            className="rounded-md p-1.5 bg-white/10 border border-white/20 text-white hover:bg-white/20"
-            aria-label="Close panel"
-          >
-            <X className="w-4 h-4" />
-          </button>
+        
         </div>
-        <div className="grid grid-cols-2 gap-3 text-sm text-foreground">
-          <div className="p-3 rounded-xl bg-background border border-border">
-            <div className="font-semibold mb-1">Golden Egg</div>
-            <div className="text-xs text-muted-foreground">120m away</div>
-          </div>
-          <div className="p-3 rounded-xl bg-background border border-border">
-            <div className="font-semibold mb-1">Mystic Bunny Nest</div>
-            <div className="text-xs text-muted-foreground">350m away</div>
+        {/* Segmented control for panels */}
+        <div className="mt-1 relative rounded-full bg-background border border-border p-1">
+          <div
+            className={`absolute top-1 bottom-1 w-1/2 rounded-full bg-white/10 transition-transform ${activePanel === "inventory" ? "translate-x-full" : "translate-x-0"}`}
+          />
+          <div className="relative grid grid-cols-2 text-sm">
+            <button
+              className={`z-10 py-1.5 rounded-full ${activePanel === "eggs" ? "text-foreground" : "text-muted-foreground"}`}
+              onClick={() => setActivePanel("eggs")}
+            >
+              My Eggs
+            </button>
+            <button
+              className={`z-10 py-1.5 rounded-full ${activePanel === "inventory" ? "text-foreground" : "text-muted-foreground"}`}
+              onClick={() => setActivePanel("inventory")}
+            >
+              Inventory
+            </button>
           </div>
         </div>
+
+        {/* Panel content */}
+        {activePanel === "eggs" ? (
+          <div className="mt-3 space-y-2 text-sm text-foreground overflow-y-auto">
+            {eggs.length === 0 && (
+              <div className="p-3 rounded-xl bg-background border border-border text-muted-foreground">
+                No eggs yet — drop one to get started!
+              </div>
+            )}
+            {eggs.map((e) => (
+              <button
+                key={e.id}
+                className="w-full text-left p-3 rounded-xl bg-background border border-border hover:bg-white/10"
+                onClick={() => setViewState((vs: any) => ({ ...vs, latitude: e.coords.latitude, longitude: e.coords.longitude, zoom: 16 }))}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold">{e.title || "Egg"}</span>
+                  <EggIcon className="w-4 h-4 text-rose-300" />
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">{e.coords.latitude.toFixed(5)}, {e.coords.longitude.toFixed(5)}</div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-foreground">
+            <div className="p-3 rounded-xl bg-background border border-border flex items-center gap-2"><Hammer className="w-4 h-4" /> Hammer</div>
+            <div className="p-3 rounded-xl bg-background border border-border flex items-center gap-2"><Wrench className="w-4 h-4" /> Wrench</div>
+            <div className="p-3 rounded-xl bg-background border border-border flex items-center gap-2"><Shield className="w-4 h-4" /> Shield</div>
+            <div className="p-3 rounded-xl bg-background border border-border flex items-center gap-2"><EggIcon className="w-4 h-4" /> Nest</div>
+          </div>
+        )}
       </aside>
     </div>
   );

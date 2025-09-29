@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuthStore } from "../../lib/store";
-import { Star, Coins, MapPin, ShoppingBag, Users, ClipboardList } from "lucide-react";
+import { Star, Coins, MapPin, ShoppingBag, Users, ClipboardList, Home as HomeIcon } from "lucide-react";
 
 export default function HomePage() {
   const user = useAuthStore((s) => s.user);
@@ -37,16 +37,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Profile avatar */}
-        <Link href="/profile" className="inline-flex items-center gap-2">
-          <Image
-            src="/logo.png"
-            alt="Profile"
-            width={36}
-            height={36}
-            className="rounded-xl border border-white/10 bg-white/5 shadow-soft"
-          />
-        </Link>
       </header>
 
       {/* Content */}
@@ -100,7 +90,11 @@ export default function HomePage() {
 
       {/* Bottom navigation (mobile-first) */}
       <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-card/90 backdrop-blur-md">
-        <div className="mx-auto max-w-3xl grid grid-cols-3">
+        <div className="mx-auto max-w-3xl grid grid-cols-4">
+          <Link href="/home" className="flex flex-col items-center py-3 text-sm text-foreground">
+            <HomeIcon className="w-5 h-5" />
+            <span className="text-xs mt-1">Home</span>
+          </Link>
           <Link href="/shop" className="flex flex-col items-center py-3 text-sm text-muted-foreground hover:text-foreground">
             <ShoppingBag className="w-5 h-5" />
             <span className="text-xs mt-1">Shop</span>
