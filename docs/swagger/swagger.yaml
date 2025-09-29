@@ -13,6 +13,43 @@ definitions:
     - email
     - password
     type: object
+  internal_server.DropEggRequest:
+    properties:
+      lat:
+        type: number
+      lon:
+        type: number
+      message:
+        type: string
+      player_id:
+        type: string
+      type:
+        enum:
+        - BUNNY
+        - GOLDEN
+        - LEGENDARY
+        type: string
+    required:
+    - lat
+    - lon
+    - player_id
+    - type
+    type: object
+  internal_server.DropEggResponse:
+    properties:
+      created_at:
+        type: string
+      inventory_id:
+        type: string
+      lat:
+        type: number
+      lon:
+        type: number
+      message:
+        type: string
+      type:
+        type: string
+    type: object
   internal_server.ErrorResponse:
     properties:
       code:
@@ -21,6 +58,45 @@ definitions:
         type: string
       status:
         type: string
+    type: object
+  internal_server.GetEggsByPlayerResponse:
+    properties:
+      collected_at:
+        type: string
+      hatched:
+        type: boolean
+      inventory_id:
+        type: string
+      message:
+        type: string
+      type:
+        type: string
+    type: object
+  internal_server.GetToolsByPlayerResponse:
+    properties:
+      description:
+        type: string
+      durability:
+        type: integer
+      equipped:
+        type: boolean
+      inventory_id:
+        type: string
+    type: object
+  internal_server.Inventory:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      item_type:
+        type: string
+      player_id:
+        type: string
+      quantity:
+        type: integer
     type: object
   internal_server.Message:
     properties:
@@ -40,6 +116,27 @@ definitions:
         example: 1233-flf4djf-alsdik
         type: string
     type: object
+  internal_server.Players:
+    properties:
+      account_id:
+        type: string
+      coins:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: string
+      level:
+        type: integer
+      settings:
+        items:
+          type: integer
+        type: array
+      updated_at:
+        type: string
+      xp:
+        type: integer
+    type: object
   internal_server.RegisterAccountRequest:
     properties:
       email:
@@ -47,13 +144,9 @@ definitions:
         type: string
       first_name:
         example: John
-        maxLength: 30
-        minLength: 2
         type: string
       last_name:
         example: Doe
-        maxLength: 30
-        minLength: 2
         type: string
       password:
         example: password123{#Pbb
@@ -66,9 +159,8 @@ definitions:
         type: string
     required:
     - email
-    - first_name
-    - last_name
     - password
+    - username
     type: object
   internal_server.renewAccessTokenRequest:
     properties:
@@ -214,6 +306,149 @@ paths:
       summary: Renew Access Token
       tags:
       - auth
+  /game/eggs:
+    get:
+      description: Get all eggs belonging to a player
+      parameters:
+      - description: Player ID
+        in: query
+        name: player_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_server.GetEggsByPlayerResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_server.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_server.ErrorResponse'
+      summary: Get Player Eggs
+      tags:
+      - game
+    post:
+      consumes:
+      - application/json
+      description: Player drops an egg (adds to inventory + eggs table)
+      parameters:
+      - description: Drop Egg Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_server.DropEggRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_server.DropEggResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_server.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_server.ErrorResponse'
+      summary: Drop Egg
+      tags:
+      - game
+  /game/inventory:
+    get:
+      description: Get all inventory items (tools, eggs, boosts) belonging to a player
+      parameters:
+      - description: Player ID
+        in: query
+        name: player_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_server.Inventory'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_server.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_server.ErrorResponse'
+      summary: Get Player Inventory
+      tags:
+      - game
+  /game/player:
+    get:
+      description: Get player stats by account id
+      parameters:
+      - description: Account ID
+        in: query
+        name: account_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_server.Players'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_server.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_server.ErrorResponse'
+      summary: Get Player Stats
+      tags:
+      - game
+  /game/tools:
+    get:
+      description: Get all tools belonging to a player
+      parameters:
+      - description: Player ID
+        in: query
+        name: player_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_server.GetToolsByPlayerResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_server.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_server.ErrorResponse'
+      summary: Get Player Tools
+      tags:
+      - game
 securityDefinitions:
   BearerAuth:
     in: header

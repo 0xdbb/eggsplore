@@ -31,6 +31,34 @@ type Accounts struct {
 	UpdatedAt    time.Time   `json:"updated_at"`
 }
 
+type Eggs struct {
+	InventoryID uuid.UUID   `json:"inventory_id"`
+	Hatched     pgtype.Bool `json:"hatched"`
+	Type        string      `json:"type"`
+	Message     pgtype.Text `json:"message"`
+	CollectedAt time.Time   `json:"collected_at"`
+}
+
+type Inventory struct {
+	ID          uuid.UUID   `json:"id"`
+	PlayerID    uuid.UUID   `json:"player_id"`
+	ItemType    string      `json:"item_type"`
+	Quantity    int32       `json:"quantity"`
+	Description pgtype.Text `json:"description"`
+	CreatedAt   time.Time   `json:"created_at"`
+}
+
+type Players struct {
+	ID        uuid.UUID `json:"id"`
+	AccountID uuid.UUID `json:"account_id"`
+	Coins     int64     `json:"coins"`
+	Xp        int64     `json:"xp"`
+	Level     int32     `json:"level"`
+	Settings  []byte    `json:"settings"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 type Session struct {
 	ID           uuid.UUID `json:"id"`
 	AccountID    uuid.UUID `json:"account_id"`
@@ -40,4 +68,10 @@ type Session struct {
 	IsBlocked    bool      `json:"is_blocked"`
 	ExpiresAt    time.Time `json:"expires_at"`
 	CreatedAt    time.Time `json:"created_at"`
+}
+
+type Tools struct {
+	InventoryID uuid.UUID   `json:"inventory_id"`
+	Durability  int32       `json:"durability"`
+	Equipped    pgtype.Bool `json:"equipped"`
 }

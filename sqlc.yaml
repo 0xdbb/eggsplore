@@ -1,8 +1,7 @@
 version: "2"
 sql:
   - schema:
-      - "internal/database/migrations/core"
-      - "internal/database/migrations/spatial"
+      - "internal/database/migrations"
     queries: "internal/database/query"
     engine: "postgresql"
     gen:

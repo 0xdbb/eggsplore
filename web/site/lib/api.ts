@@ -72,4 +72,24 @@ export const api = {
   renew(opts?: ApiOptions) {
     return request<AuthResponse>("/auth/renew", { method: 'POST' }, opts);
   },
+  // ---- Game endpoints ----
+  getGameEggs(player_id: string, opts?: ApiOptions) {
+    const qp = new URLSearchParams({ player_id }).toString();
+    return request<import('./types').GameEggDTO[]>(`/game/eggs?${qp}`, { method: 'GET' }, opts);
+  },
+  createGameEgg(payload: import('./types').CreateGameEggPayload, opts?: ApiOptions) {
+    return request<unknown>(`/game/eggs`, { method: 'POST', body: JSON.stringify(payload) }, opts);
+  },
+  getInventory(player_id: string, opts?: ApiOptions) {
+    const qp = new URLSearchParams({ player_id }).toString();
+    return request<import('./types').InventoryItemDTO[]>(`/game/inventory?${qp}`, { method: 'GET' }, opts);
+  },
+  getPlayerByAccount(account_id: string, opts?: ApiOptions) {
+    const qp = new URLSearchParams({ account_id }).toString();
+    return request<import('./types').PlayerAccountDTO>(`/game/player?${qp}`, { method: 'GET' }, opts);
+  },
+  getPlayerEquipment(player_id: string, opts?: ApiOptions) {
+    const qp = new URLSearchParams({ player_id }).toString();
+    return request<import('./types').PlayerEquipmentDTO[]>(`/game/player?${qp}`, { method: 'GET' }, opts);
+  },
 };

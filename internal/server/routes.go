@@ -32,6 +32,7 @@ func (s *Server) RegisterRoutes() {
 	{
 		s.swaggerRoute(api)
 		s.authRoutes(api)
+		s.gameRoutes(api)
 		api.GET("/health", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"status": "up"})
 		})
@@ -66,6 +67,17 @@ func (s *Server) authRoutes(group *gin.RouterGroup) {
 		auth.POST("/register", s.Register)
 		auth.POST("/logout", s.Logout)
 		auth.POST("/renew", s.RenewAccessToken)
+	}
+}
+
+func (s *Server) gameRoutes(group *gin.RouterGroup) {
+	game := group.Group("/game")
+	{
+		game.GET("/eggs", s.GetPlayerEggs)
+		game.POST("/eggs", s.DropEgg)
+		game.GET("/inventory", s.GetPlayerInventory)
+		game.GET("/player", s.GetPlayerStats)
+		game.GET("/tools", s.GetPlayerTools)
 	}
 }
 

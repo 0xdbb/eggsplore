@@ -22,7 +22,7 @@ sqlc:
 reset-db: goose-down goose-up
 
 goose-create:
-	goose -s create $(name) -dir ./internal/database/migrations/core sql
+	goose -s create $(name) -dir ./internal/database/migrations sql
 
 goose-up:
 	goose up

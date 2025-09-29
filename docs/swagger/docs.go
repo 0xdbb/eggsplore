@@ -207,6 +207,223 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/game/eggs": {
+            "get": {
+                "description": "Get all eggs belonging to a player",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "game"
+                ],
+                "summary": "Get Player Eggs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Player ID",
+                        "name": "player_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/internal_server.GetEggsByPlayerResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_server.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_server.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Player drops an egg (adds to inventory + eggs table)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "game"
+                ],
+                "summary": "Drop Egg",
+                "parameters": [
+                    {
+                        "description": "Drop Egg Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_server.DropEggRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_server.DropEggResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_server.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_server.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/game/inventory": {
+            "get": {
+                "description": "Get all inventory items (tools, eggs, boosts) belonging to a player",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "game"
+                ],
+                "summary": "Get Player Inventory",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Player ID",
+                        "name": "player_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/internal_server.Inventory"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_server.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_server.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/game/player": {
+            "get": {
+                "description": "Get player stats by account id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "game"
+                ],
+                "summary": "Get Player Stats",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Account ID",
+                        "name": "account_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_server.Players"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_server.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_server.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/game/tools": {
+            "get": {
+                "description": "Get all tools belonging to a player",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "game"
+                ],
+                "summary": "Get Player Tools",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Player ID",
+                        "name": "player_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/internal_server.GetToolsByPlayerResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_server.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_server.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -228,6 +445,60 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_server.DropEggRequest": {
+            "type": "object",
+            "required": [
+                "lat",
+                "lon",
+                "player_id",
+                "type"
+            ],
+            "properties": {
+                "lat": {
+                    "type": "number"
+                },
+                "lon": {
+                    "type": "number"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "player_id": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "BUNNY",
+                        "GOLDEN",
+                        "LEGENDARY"
+                    ]
+                }
+            }
+        },
+        "internal_server.DropEggResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "inventory_id": {
+                    "type": "string"
+                },
+                "lat": {
+                    "type": "number"
+                },
+                "lon": {
+                    "type": "number"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "internal_server.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -239,6 +510,66 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "string"
+                }
+            }
+        },
+        "internal_server.GetEggsByPlayerResponse": {
+            "type": "object",
+            "properties": {
+                "collected_at": {
+                    "type": "string"
+                },
+                "hatched": {
+                    "type": "boolean"
+                },
+                "inventory_id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_server.GetToolsByPlayerResponse": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "durability": {
+                    "type": "integer"
+                },
+                "equipped": {
+                    "type": "boolean"
+                },
+                "inventory_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_server.Inventory": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "item_type": {
+                    "type": "string"
+                },
+                "player_id": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "integer"
                 }
             }
         },
@@ -267,13 +598,44 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_server.Players": {
+            "type": "object",
+            "properties": {
+                "account_id": {
+                    "type": "string"
+                },
+                "coins": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "level": {
+                    "type": "integer"
+                },
+                "settings": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "xp": {
+                    "type": "integer"
+                }
+            }
+        },
         "internal_server.RegisterAccountRequest": {
             "type": "object",
             "required": [
                 "email",
-                "first_name",
-                "last_name",
-                "password"
+                "password",
+                "username"
             ],
             "properties": {
                 "email": {
@@ -282,14 +644,10 @@ const docTemplate = `{
                 },
                 "first_name": {
                     "type": "string",
-                    "maxLength": 30,
-                    "minLength": 2,
                     "example": "John"
                 },
                 "last_name": {
                     "type": "string",
-                    "maxLength": 30,
-                    "minLength": 2,
                     "example": "Doe"
                 },
                 "password": {
