@@ -12,10 +12,10 @@ export default function HomePage() {
   const [isFinalCtaHovered, setIsFinalCtaHovered] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-900 via-indigo-900 to-sky-900 shimmer-bg overflow-x-hidden">
+    <div className="min-h-screen hero-gradient shimmer-bg overflow-x-hidden">
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 hero-gradient overflow-hidden">
+      <section className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 overflow-hidden">
         {/* Login button (top-right) */}
         <div className="absolute top-4 right-4 z-20">
           <Link

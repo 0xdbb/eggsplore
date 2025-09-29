@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Menu, X } from "lucide-react";
 import Image from "next/image";
+import { useAuthStore } from "../../lib/store";
 // MapLibre styles
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -21,6 +22,8 @@ export default function MapPage() {
   const [mobileHeight, setMobileHeight] = useState<number>(420); // px
   const dragStartY = useRef<number | null>(null);
   const dragStartHeight = useRef<number>(0);
+  const [userPos, setUserPos] = useState<{ latitude: number; longitude: number } | null>(null);
+  const xp = useAuthStore((s) => s.user?.xp ?? 0);
 
   // Hide global header logo on map page
   useEffect(() => {
@@ -38,10 +41,37 @@ export default function MapPage() {
     pitch: 0,
     bearing: 0,
   } as const;
+  const [viewState, setViewState] = useState<any>(initialViewState);
+
+  // Get initial position from onboarding (sessionStorage), then watch live location
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("user_location");
+      if (raw) {
+        const loc = JSON.parse(raw);
+        if (loc?.latitude && loc?.longitude) {
+          setUserPos({ latitude: loc.latitude, longitude: loc.longitude });
+          setViewState((vs: any) => ({ ...vs, latitude: loc.latitude, longitude: loc.longitude, zoom: 14 }));
+        }
+      }
+    } catch {}
+
+    if ("geolocation" in navigator) {
+      const id = navigator.geolocation.watchPosition(
+        (p) => {
+          const { latitude, longitude } = p.coords;
+          setUserPos({ latitude, longitude });
+        },
+        () => {},
+        { enableHighAccuracy: true, maximumAge: 5000 }
+      );
+      return () => navigator.geolocation.clearWatch(id);
+    }
+  }, []);
 
   // Demo deck.gl layer (pastel dot) matching theme
   const layers = useMemo(() => {
-    return [
+    const base: any[] = [
       new ScatterplotLayer({
         id: "demo-eggs",
         data: [
@@ -51,14 +81,35 @@ export default function MapPage() {
         getPosition: (d: any) => d.position,
         getRadius: (d: any) => d.size,
         radiusUnits: "meters",
-        getFillColor: [244, 114, 182, 160], // rose-400 pastel
-        getLineColor: [99, 102, 241, 180], // indigo-500 outline
+        getFillColor: [244, 114, 182, 160],
+        getLineColor: [99, 102, 241, 180],
         lineWidthUnits: "pixels",
         lineWidthMinPixels: 1.5,
         pickable: true,
       }),
     ];
-  }, []);
+    if (userPos) {
+      base.push(
+        new ScatterplotLayer({
+          id: "user-location",
+          data: [{ position: [userPos.longitude, userPos.latitude], size: 50 }],
+          getPosition: (d: any) => d.position,
+          getRadius: (d: any) => d.size,
+          radiusUnits: "meters",
+          getFillColor: [147, 197, 253, 200], // sky-300
+          getLineColor: [59, 130, 246, 220], // blue-500
+          lineWidthUnits: "pixels",
+          lineWidthMinPixels: 2,
+          pickable: false,
+          updateTriggers: {
+            getPosition: [userPos.longitude, userPos.latitude],
+            getRadius: [userPos.longitude, userPos.latitude],
+          },
+        })
+      );
+    }
+    return base;
+  }, [userPos]);
 
   return (
     <div className="h-screen w-screen bg-background text-foreground relative">
@@ -83,9 +134,11 @@ export default function MapPage() {
       {/* DeckGL + Map */}
       <DeckGL
         initialViewState={initialViewState}
+        viewState={viewState}
+        onViewStateChange={({ viewState: vs }: any) => setViewState(vs)}
         controller={true}
         layers={layers}
-        style={{ position: "absolute", inset: 0 }}
+        style={{ position: "absolute"}}
       >
         <Map
           reuseMaps
@@ -93,6 +146,25 @@ export default function MapPage() {
           mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
         />
       </DeckGL>
+
+      {/* XP Badge (top-right) */}
+      <div className="absolute top-4 right-4 z-30 inline-flex items-center gap-2 rounded-full px-4 py-2 bg-card border border-border text-foreground shadow-soft">
+        <span className="text-xs opacity-80">XP</span>
+        <span className="font-semibold">{xp}</span>
+      </div>
+
+      {/* Floating Add/Drop Egg button */}
+      <button
+        className="absolute right-4 bottom-24 md:bottom-8 z-30 inline-flex items-center gap-2 rounded-full px-5 py-3 bg-gradient-to-r from-rose-400 via-pink-400 to-amber-300 text-white font-semibold shadow-2xl hover:scale-105 transition-transform"
+        onClick={() => {
+          // Placeholder: open a creation flow; for now, center on user
+          if (userPos) {
+            setViewState((vs: any) => ({ ...vs, latitude: userPos.latitude, longitude: userPos.longitude, zoom: 15 }));
+          }
+        }}
+      >
+        <MapPin className="w-4 h-4" /> Drop Egg
+      </button>
 
       {/* Desktop drawer (left side) */}
       <aside

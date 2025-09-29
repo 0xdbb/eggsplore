@@ -2,8 +2,8 @@ package server
 
 import (
 	"errors"
+	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/0xdbb/eggsplore/util"
@@ -13,18 +13,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
-)
-
-// TODO: Forgot password
-var (
-	SuperADMIN            = "SUPER_ADMIN"
-	Admin                 = "ADMIN"
-	Standard              = "STANDARD"
-	AccountActive         = "ACTIVE"
-	AccountInActive       = "INACTIVE"
-	AccountPending        = "PENDING"
-	SignupTokenDuration   = 48 * time.Hour
-	OTPExpirationDuration = 1 * time.Minute
 )
 
 type AccountLoginRequest struct {
@@ -49,7 +37,6 @@ type AccountResponse struct {
 	LastName   string    `json:"last_name"  example:"John_doe11"`
 	Email      string    `json:"email" example:"john.doe@example.com"`
 	Role       string    `json:"role" example:"ADMIN"`
-	Department string    `json:"department" example:"Minerals Department"`
 	CreatedAt  time.Time `json:"created_at" example:"2025-01-01T12:00:00Z"`
 	UpdatedAt  time.Time `json:"updated_at" example:"2025-01-02T12:00:00Z"`
 	Status     string    `json:"status" example:"ACTIVE" bson:"status"`
@@ -130,107 +117,36 @@ func (s *Server) Login(ctx *gin.Context) {
 		return
 	}
 
-	// Check if account is active
-	if account.Status != AccountActive {
-		ctx.JSON(http.StatusUnauthorized, HandleError(nil, http.StatusUnauthorized, "Account not activated. Please complete setup."))
-		return
-	}
-
 	// Verify password
-	if err := util.VerifyPassword(account.Password.String, req.Password); err != nil {
+	if err := util.VerifyPassword(account.Password, req.Password); err != nil {
 		ctx.JSON(http.StatusUnauthorized, HandleError(nil, http.StatusUnauthorized, "Invalid email or password"))
 		return
 	}
-	//
-	// Generate and store new OTP
-	otp := util.GenerateOTP()
-	expiresAt := time.Now().Add(OTPExpirationDuration)
 
-	args := db.UpdateAccountOTPParams{
-		ID:           account.ID,
-		OtpCode:      stringToPgtype(otp),
-		OtpExpiresAt: stringToPgtype(expiresAt.Format(time.RFC3339)),
-	}
-
-	if err := s.db.UpdateAccountOTP(ctx, args); err != nil {
-		ctx.JSON(http.StatusInternalServerError, HandleError(err, http.StatusInternalServerError, "Failed to store OTP"))
-		return
-	}
-
-	if err := util.SendVerificationEmail(account.Email, otp, s.config.ResendApiKey); err != nil {
-		ctx.JSON(http.StatusInternalServerError, HandleError(err, http.StatusInternalServerError, "Failed to send OTP"))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, HandleMessage("An OTP has been sent to your registered email address. Please check your email and enter the OTP to complete the login process."))
-}
-
-// @Summary      Verify 2FA OTP to complete login
-// @Description  Verifies the OTP sent to the account's email and generates access and refresh tokens
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Param        body body VerifyOTPRequest true "OTP Verification Request"
-// @Success      200  {object}  AccountLoginResponse "Successful verification and login"
-// @Failure      400  {object}  ErrorResponse "Invalid request"
-// @Failure      401  {object}  ErrorResponse "Invalid or expired OTP"
-// @Failure      404  {object}  ErrorResponse "Invalid email or OTP"
-// @Failure      500  {object}  ErrorResponse "Internal server error"
-// @Router       /auth/verify-otp [post]
-func (s *Server) VerifyOTP(ctx *gin.Context) {
-	var req VerifyOTPRequest
-
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		// Try to extract and return validation errors
-		if valErr := HandleValidationError(err); valErr != nil {
-			ctx.JSON(http.StatusBadRequest, valErr)
-			return
-		}
-
-		// Fallback for non-validation binding errors
-		ctx.JSON(http.StatusBadRequest, &ErrorResponse{
-			Status:  "error",
-			Message: "Invalid request format",
-			Code:    http.StatusBadRequest,
-		})
-		return
-	}
-
-	account, err := s.db.GetAccountByEmail(ctx, req.Email)
-	if err != nil {
-		if errors.Is(err, db.ErrRecordNotFound) {
-			ctx.JSON(http.StatusNotFound, HandleError(nil, http.StatusNotFound, "Invalid email or OTP"))
-			return
-		}
-		ctx.JSON(http.StatusInternalServerError, HandleError(err, http.StatusInternalServerError, "Error retrieving account"))
-		return
-	}
-
-	if err := s.verifyOTP(ctx, account, req.OTP); err != nil {
-		ctx.JSON(http.StatusUnauthorized, HandleError(nil, http.StatusUnauthorized, err.Error()))
-		return
-	}
-
-	// Generate tokens
 	s.issueTokensAndRespond(ctx, account)
 }
 
-// @Summary      Resend OTP
-// @Description  Resend OTP to a verified account's email if previous OTP is expired
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Param        request body SendOTPRequest true "Send OTP Request"
-// @Success      200 {object} Message "OTP resent successfully"
-// @Failure      400 {object} ErrorResponse "Invalid request"
-// @Failure      401 {object} ErrorResponse "Email not verified or OTP not expired"
-// @Failure      404 {object} ErrorResponse "Account not found"
-// @Failure      429 {object} ErrorResponse "OTP still valid, wait before requesting new one"
-// @Failure      500 {object} ErrorResponse "Internal server error"
-// @Router       /auth/send-otp [post]
-func (s *Server) SendOTP(ctx *gin.Context) {
-	var req SendOTPRequest
+type RegisterAccountRequest struct {
+	Email     string `json:"email" binding:"required" example:"john.doe@example.com"`
+	FirstName string `json:"first_name"  example:"John"`
+	LastName  string `json:"last_name"  example:"Doe"`
+	UserName  string `json:"username" binding:"required,min=3,max=30,alphanum" example:"John_doe11"`
+	Password  string `json:"password" binding:"required,min=8,StrongPassword" example:"password123{#Pbb"`
+}
 
+// @Summary		Register Account
+// @Description	Register account with email and password
+// @Tags		auth
+// @Accept		json
+// @Produce		json
+// @Param		request	body		RegisterAccountRequest	true	"Account Login Request"
+// @Success		200		{object}	Message
+// @Failure		400		{object}	ErrorResponse
+// @Failure		404		{object}	ErrorResponse
+// @Failure		500		{object}	ErrorResponse
+// @Router		/auth/register [post]
+func (s *Server) Register(ctx *gin.Context) {
+	var req RegisterAccountRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		// Try to extract and return validation errors
 		if valErr := HandleValidationError(err); valErr != nil {
@@ -247,52 +163,38 @@ func (s *Server) SendOTP(ctx *gin.Context) {
 		return
 	}
 
-	account, err := s.db.GetAccountByEmail(ctx, req.Email)
+	if req.UserName == "" {
+		req.UserName = req.FirstName + "_" + req.LastName + util.RandomString(3)
+	}
+
+	hashPassword, err := util.HashPassword(req.Password)
 	if err != nil {
-		if errors.Is(err, db.ErrRecordNotFound) {
-			ctx.JSON(http.StatusNotFound, HandleError(nil, http.StatusNotFound, "Account not found"))
+		log.Fatal("Failed to hash password:", err)
+		ctx.JSON(http.StatusInternalServerError, HandleError(nil, http.StatusInternalServerError, "Error hashing password"))
+		return
+	}
+
+	arg := db.CreateAccountParams{
+		Email:     req.Email,
+		Password:  hashPassword,
+		FirstName: stringToPgtype(req.FirstName),
+		LastName:  stringToPgtype(req.LastName),
+		Username:  stringToPgtype(req.UserName),
+	}
+
+	_, err = s.db.CreateAccount(ctx, arg)
+	if err != nil {
+		if errors.Is(err, db.ErrUniqueViolation) {
+			ctx.JSON(http.StatusNotFound, HandleError(nil, http.StatusNotFound, "User with this email or username already exists"))
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, HandleError(err, http.StatusInternalServerError, "Failed to retrieve account"))
+		ctx.JSON(http.StatusInternalServerError, HandleError(err, http.StatusInternalServerError, "Error creating User"))
 		return
 	}
 
-	// Check if existing OTP is still valid
-	if !account.OtpCode.Valid || strings.TrimSpace(account.OtpCode.String) == "" {
-		otpExpiresAt, err := time.Parse(time.RFC3339, account.OtpExpiresAt.String)
-		if err == nil && time.Now().Before(otpExpiresAt) {
-			ctx.JSON(http.StatusTooManyRequests, HandleError(nil, http.StatusTooManyRequests, "OTP already sent. Please wait before requesting a new one."))
-			return
-		}
-	}
-
-	// Generate and store new OTP
-	otp := util.GenerateOTP()
-	expiresAt := time.Now().Add(OTPExpirationDuration)
-
-	args := db.UpdateAccountOTPParams{
-		ID: account.ID,
-		OtpCode: pgtype.Text{
-			String: otp,
-			Valid:  true,
-		},
-		OtpExpiresAt: pgtype.Text{
-			String: expiresAt.Format(time.RFC3339),
-			Valid:  true,
-		},
-	}
-
-	if err := s.db.UpdateAccountOTP(ctx, args); err != nil {
-		ctx.JSON(http.StatusInternalServerError, HandleError(err, http.StatusInternalServerError, "Failed to store OTP"))
-		return
-	}
-
-	if err := util.SendVerificationEmail(account.Email, otp, s.config.ResendApiKey); err != nil {
-		ctx.JSON(http.StatusInternalServerError, HandleError(err, http.StatusInternalServerError, "Failed to send OTP"))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, HandleMessage("OTP resent successfully. Please check your email."))
+	ctx.JSON(http.StatusOK, Message{
+		Message: "Account created successfully",
+	})
 }
 
 // @Summary		Logout Account
@@ -357,28 +259,6 @@ func clearCookie(ctx *gin.Context, name string) {
 	)
 }
 
-// verifyOTP is a reusable method to verify OTP
-func (s *Server) verifyOTP(ctx *gin.Context, account db.Accounts, otp string) error {
-	if !account.OtpCode.Valid || account.OtpCode.String == "" {
-		return errors.New("OTP not found")
-	}
-
-	otpExpiry, err := time.Parse(time.RFC3339, account.OtpExpiresAt.String)
-	if err != nil || time.Now().After(otpExpiry) {
-		return errors.New("OTP has expired, please request a new one")
-	}
-
-	if account.OtpCode.String != otp {
-		return errors.New("invalid OTP")
-	}
-
-	// Clear OTP after successful use
-	if err := s.db.ClearAccountOTP(ctx, account.ID); err != nil {
-		return errors.New("failed to clear OTP")
-	}
-	return nil
-}
-
 // issueTokensAndRespond generates tokens and creates a session
 func (s *Server) issueTokensAndRespond(ctx *gin.Context, account db.Accounts) {
 	// Generate tokens
@@ -429,8 +309,9 @@ func pgtypeToString(p pgtype.Text) string {
 }
 
 func stringToPgtype(s string) pgtype.Text {
-	return pgtype.Text{
-		String: s,
-		Valid:  true,
+	if s == "" {
+		return pgtype.Text{Valid: false}
+	} else {
+		return pgtype.Text{String: s, Valid: true}
 	}
 }

@@ -4,43 +4,66 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { z } from "zod";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
+import { useLogin, useRegister } from "../../hooks/useAuth";
+import { useAuthStore } from "../../lib/store";
 
 // Dynamically import confetti (client-only)
 const ConfettiBoom = dynamic(() => import("react-confetti-boom"), { ssr: false });
 
-const authSchema = z.object({
-  email: z
-    .string()
-    .min(1, "Email is required")
-    .email("Enter a valid email"),
+const baseFields = {
+  email: z.string().min(1, "Email is required").email("Enter a valid email"),
   password: z
     .string()
     .min(8, "Password must be at least 8 characters")
     .max(72, "Password is too long")
     .regex(/\d/, "Include at least one number")
     .regex(/[A-Za-z]/, "Include at least one letter"),
-  mode: z.enum(["signin", "register"]).default("signin"),
+};
+
+const registerSchema = z
+  .object({
+    username: z.string().min(3, "Username must be at least 3 characters").max(30, "Max 30 characters").regex(/^[A-Za-z0-9_.-]+$/, "Only letters, numbers, _ . -"),
+    confirmPassword: z.string().min(1, "Confirm your password"),
+    ...baseFields,
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+const loginSchema = z.object({
+  ...baseFields,
 });
 
 export default function AuthPage() {
   const router = useRouter();
   const [mode, setMode] = useState<"signin" | "register">("signin");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string; username?: string; confirmPassword?: string }>({});
   const [boom, setBoom] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const loginMutation = useLogin();
+  const registerMutation = useRegister();
 
   const validate = () => {
-    const result = authSchema.safeParse({ email, password, mode });
+    const result = mode === "register"
+      ? registerSchema.safeParse({ username, email, password, confirmPassword })
+      : loginSchema.safeParse({ email, password });
     if (!result.success) {
-      const fieldErrors: { email?: string; password?: string } = {};
+      const fieldErrors: { email?: string; password?: string; username?: string; confirmPassword?: string } = {};
       for (const issue of result.error.issues) {
         if (issue.path[0] === "email") fieldErrors.email = issue.message;
         if (issue.path[0] === "password") fieldErrors.password = issue.message;
+        if (issue.path[0] === "username") fieldErrors.username = issue.message;
+        if (issue.path[0] === "confirmPassword") fieldErrors.confirmPassword = issue.message;
       }
       setErrors(fieldErrors);
       return false;
@@ -54,22 +77,29 @@ export default function AuthPage() {
     if (!validate()) return;
     setSubmitting(true);
     try {
-      // TODO: integrate with your auth provider (e.g., Supabase)
-      await new Promise((r) => setTimeout(r, 600));
       if (mode === "signin") {
+        const res = await loginMutation.mutateAsync({ email, password });
+        // Persist minimal user info to global store
+        useAuthStore.getState().setUser({
+          id: (res.user as any)?.id,
+          email: (res.user as any)?.email || email,
+          username: (res.user as any)?.user_name,
+          xp: 0,
+        });
         toast.success("Signed in successfully. Welcome back!");
-        router.push("/map");
+        router.push("/onboarding");
       } else {
-        toast.success("Account created! You can start your quest.");
+        await registerMutation.mutateAsync({ email, password, username });
+        toast.success("Account created! Please sign in.");
         setBoom(true);
-        // Show confetti briefly, then navigate to map
+        // After a short celebration, switch to sign-in
         setTimeout(() => {
           setBoom(false);
-          router.push("/map");
-        }, 2000);
+          setMode("signin");
+        }, 1500);
       }
-    } catch (err) {
-      toast.error("Something went wrong. Please try again.");
+    } catch (err: any) {
+      toast.error(err?.message || "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -98,20 +128,7 @@ export default function AuthPage() {
         </div>
 
         <div className="relative z-10 w-full max-w-md mx-auto bg-card/90 backdrop-blur-sm rounded-3xl border border-border shadow-game p-6 sm:p-8">
-          {boom && (
-            <div className="pointer-events-none fixed top-6 left-1/2 -translate-x-1/2 z-[9999]">
-              {/* Confetti tuned to fall from above */}
-              {/* Some props may be ignored depending on library version, but are safe */}
-              <ConfettiBoom
-                // @ts-ignore
-                mode="fall"
-                particleCount={220}
-                shapeSize={10}
-                colors={["#fda4af", "#f9a8d4", "#a78bfa", "#93c5fd", "#fde68a"]}
-                fadeOutHeight={160}
-              />
-            </div>
-          )}
+          
           <div className="text-center mb-6">
             <h1 className="display-font text-4xl font-extrabold bg-gradient-to-r from-pink-300 via-rose-300 to-sky-300 bg-clip-text text-transparent">
               {mode === "signin" ? "Sign In" : "Create Account"}
@@ -122,6 +139,22 @@ export default function AuthPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === "register" && (
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium text-muted-foreground">Username</label>
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  onBlur={validate}
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  placeholder="e.g. john_doe"
+                  autoComplete="username"
+                />
+                {errors.username && <p className="mt-1 text-sm text-rose-400">{errors.username}</p>}
+              </div>
+            )}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-muted-foreground">Email</label>
               <input
@@ -139,19 +172,56 @@ export default function AuthPage() {
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-muted-foreground">Password</label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onBlur={validate}
-                className="mt-1 w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                placeholder="••••••••"
-                autoComplete={mode === "signin" ? "current-password" : "new-password"}
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onBlur={validate}
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-4 py-3 pr-12 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  placeholder="••••••••"
+                  autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
               {errors.password && <p className="mt-1 text-sm text-rose-400">{errors.password}</p>}
               <p className="mt-2 text-xs text-muted-foreground">Must be 8+ chars, include a letter and a number.</p>
             </div>
+
+            {mode === "register" && (
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-muted-foreground">Confirm Password</label>
+                <div className="relative">
+                  <input
+                    id="confirmPassword"
+                    type={showConfirm ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onBlur={validate}
+                    className="mt-1 w-full rounded-xl border border-border bg-background px-4 py-3 pr-12 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    aria-label={showConfirm ? "Hide confirm password" : "Show confirm password"}
+                    onClick={() => setShowConfirm((v) => !v)}
+                    className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground"
+                  >
+                    {showConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                {errors.confirmPassword && <p className="mt-1 text-sm text-rose-400">{errors.confirmPassword}</p>}
+              </div>
+            )}
 
             <button
               type="submit"

@@ -9,9 +9,42 @@ import { Chewy, Nunito } from 'next/font/google';
 import { Toaster } from 'sonner';
 import Link from 'next/link';
 import Image from 'next/image';
+import { ReactQueryProvider } from '../lib/queryClient';
+import AppChrome from '../components/AppChrome';
+import { usePathname } from 'next/navigation';
 
 const display = Chewy({ subsets: ['latin'], weight: '400', variable: '--font-display' });
 const body = Nunito({ subsets: ['latin'], variable: '--font-body' });
+
+// Client shell to decide when to show logo and mount app chrome
+function ClientShell({ children }: { children: React.ReactNode }) {
+  // This must be a client component to use usePathname
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const pathname = usePathname?.() || '/';
+  const showGlobalLogo = pathname === '/' || pathname.startsWith('/auth');
+  return (
+    <>
+      {showGlobalLogo ? (
+        <div id="global-logo" className="fixed top-4 left-4 z-50">
+          <Link href="/" className="inline-flex items-center gap-2">
+            <Image
+              src="/logo.png"
+              alt="Eggsplore Logo"
+              width={40}
+              height={40}
+              className="rounded-xl shadow-soft border border-white/10 bg-white/5"
+              priority
+            />
+            <span className="hidden sm:inline display-font text-lg bg-gradient-to-r from-pink-300 via-rose-300 to-sky-300 bg-clip-text text-transparent">Eggsplore</span>
+          </Link>
+        </div>
+      ) : (
+        <AppChrome />
+      )}
+      {children}
+    </>
+  );
+}
 
 export default function RootLayout({
   children,
@@ -27,21 +60,11 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body className="body-font bg-background text-foreground">
-        {/* Global top-left logo */}
-        <div id="global-logo" className="fixed top-4 left-4 z-50">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <Image
-              src="/logo.png"
-              alt="Eggsplore Logo"
-              width={40}
-              height={40}
-              className="rounded-xl shadow-soft border border-white/10 bg-white/5"
-              priority
-            />
-            <span className="hidden sm:inline display-font text-lg bg-gradient-to-r from-pink-300 via-rose-300 to-sky-300 bg-clip-text text-transparent">Eggsplore</span>
-          </Link>
-        </div>
-        {children}
+        <ClientShell>
+          <ReactQueryProvider>
+            {children}
+          </ReactQueryProvider>
+        </ClientShell>
         {/* Global toaster for notifications */}
         <Toaster
           theme="dark"
@@ -61,5 +84,35 @@ export default function RootLayout({
         />
       </body>
     </html>
+  );
+}
+
+// Client shell to decide when to show logo and mount app chrome
+function ClientShell({ children }: { children: React.ReactNode }) {
+  // This must be a client component to use usePathname
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const pathname = usePathname?.() || '/';
+  const showGlobalLogo = pathname === '/' || pathname.startsWith('/auth');
+  return (
+    <>
+      {showGlobalLogo ? (
+        <div id="global-logo" className="fixed top-4 left-4 z-50">
+          <Link href="/" className="inline-flex items-center gap-2">
+            <Image
+              src="/logo.png"
+              alt="Eggsplore Logo"
+              width={40}
+              height={40}
+              className="rounded-xl shadow-soft border border-white/10 bg-white/5"
+              priority
+            />
+            <span className="hidden sm:inline display-font text-lg bg-gradient-to-r from-pink-300 via-rose-300 to-sky-300 bg-clip-text text-transparent">Eggsplore</span>
+          </Link>
+        </div>
+      ) : (
+        <AppChrome />
+      )}
+      {children}
+    </>
   );
 }

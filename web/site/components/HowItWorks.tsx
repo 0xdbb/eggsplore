@@ -17,7 +17,7 @@ const steps: Step[] = [
     number: "01",
     title: "Plant Your Egg",
     description:
-      "Drop a virtual egg at any real GPS location. Choose your spot wisely - different environments grow different creatures!",
+      "Drop a virtual egg at any real location",
     color: "bg-gradient-egg",
     imageSrc: "/step-1-plant.jpg",
   },
@@ -25,7 +25,7 @@ const steps: Step[] = [
     number: "02",
     title: "Come Back & Hatch",
     description:
-      "Return to your egg's location before it decays. Water it with care and watch the magic happen!",
+      "Return to your egg's location before it decays",
     color: "bg-gradient-nature",
     imageSrc: "/step-2-hatch.jpg",
   },
@@ -33,7 +33,7 @@ const steps: Step[] = [
     number: "03",
     title: "Watch It Grow",
     description:
-      "Discover what adorable creature emerges! From easter bunnies to tiny dinosaurs - collect them all and compete with friends!",
+      "Discover what adorable creature emerges!",
     color: "bg-gradient-adventure",
     imageSrc: "/step-3-grow.jpg",
   },
@@ -41,14 +41,14 @@ const steps: Step[] = [
 
 export default function HowItWorks({ onStart }: { onStart?: () => void }) {
   return (
-    <section className="py-24 bg-background relative overflow-hidden">
-      {/* Background decorations */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-1/4 left-10 w-32 h-32 bg-primary/20 rounded-full blur-xl animate-pulse" />
-        <div
-          className="absolute bottom-1/4 right-16 w-40 h-40 bg-accent/20 rounded-full blur-xl animate-pulse"
-          style={{ animationDelay: "1s" }}
-        />
+    <section className="relative overflow-hidden py-24">
+      {/* Floating background eggs to match hero */}
+      <div className="pointer-events-none absolute inset-0 opacity-30 z-0">
+        <div className="absolute top-20 left-10 w-16 h-16 bg-gradient-egg rounded-full animate-float" style={{ animationDelay: '0s' }} />
+        <div className="absolute top-40 right-20 w-12 h-12 bg-gradient-adventure rounded-full animate-float" style={{ animationDelay: '1s' }} />
+        <div className="absolute bottom-32 left-1/4 w-20 h-20 bg-gradient-nature rounded-full animate-bounce-soft" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-32 left-2/3 w-14 h-14 bg-primary/60 rounded-full animate-float" style={{ animationDelay: '1.5s' }} />
+        <div className="absolute bottom-20 right-1/3 w-[4.5rem] h-[4.5rem] bg-secondary/70 rounded-full animate-bounce-soft" style={{ animationDelay: '0.5s' }} />
       </div>
 
       <div className="container mx-auto px-4 relative z-10">

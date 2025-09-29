@@ -1,6 +1,6 @@
-// @title           github.com/0xdbb/eggsplore API
+// @title           Eggsplore API
 // @version         1.0
-// @description     API documentation for the github.com/0xdbb/eggsplore service
+// @description     API documentation for the eggsplore game
 // @BasePath /api/v1
 // @securityDefinitions.apikey BearerAuth
 // @in header

@@ -12,137 +12,23 @@ import (
 )
 
 type Accounts struct {
-	ID                   uuid.UUID   `json:"id"`
-	FirstName            pgtype.Text `json:"first_name"`
-	LastName             pgtype.Text `json:"last_name"`
-	UserName             pgtype.Text `json:"user_name"`
-	Email                string      `json:"email"`
-	Department           string      `json:"department"`
-	Password             pgtype.Text `json:"password"`
-	Status               string      `json:"status"`
-	Role                 string      `json:"role"`
-	Is2faEnabled         pgtype.Bool `json:"is_2fa_enabled"`
-	SignupToken          pgtype.Text `json:"signup_token"`
-	SignupTokenExpiresAt pgtype.Text `json:"signup_token_expires_at"`
-	OtpCode              pgtype.Text `json:"otp_code"`
-	OtpExpiresAt         pgtype.Text `json:"otp_expires_at"`
-	IsApproved           bool        `json:"is_approved"`
-	CreatedAt            time.Time   `json:"created_at"`
-	LastActive           time.Time   `json:"last_active"`
-	UpdatedAt            time.Time   `json:"updated_at"`
-	ProfileUrl           pgtype.Text `json:"profile_url"`
-}
-
-type Concessions struct {
-	Name      pgtype.Text      `json:"name"`
-	Owner     pgtype.Text      `json:"owner"`
-	Type      pgtype.Text      `json:"type"`
-	Status    pgtype.Text      `json:"status"`
-	StartDate pgtype.Timestamp `json:"start_date"`
-	ExpiryDat pgtype.Timestamp `json:"expiry_dat"`
-	Assets    pgtype.Text      `json:"assets"`
-	Pid       pgtype.Int4      `json:"pid"`
-	Geom      interface{}      `json:"geom"`
-}
-
-type Districts struct {
-	Region   pgtype.Text `json:"region"`
-	District pgtype.Text `json:"district"`
-	Geom     interface{} `json:"geom"`
-}
-
-// Log errors for debugging and retry
-type Errors struct {
 	ID           uuid.UUID   `json:"id"`
-	TaskID       uuid.UUID   `json:"task_id"`
-	ErrorMessage pgtype.Text `json:"error_message"`
-	Timestamp    time.Time   `json:"timestamp"`
-}
-
-type ForestReserves struct {
-	Name1    pgtype.Text `json:"name_1"`
-	Category pgtype.Text `json:"category"`
-	Name     pgtype.Text `json:"name"`
-	Geom     interface{} `json:"geom"`
-}
-
-type MiningSegments struct {
-	ID                  uuid.UUID          `json:"id"`
-	TaskID              uuid.UUID          `json:"task_id"`
-	Geometry            interface{}        `json:"geometry"`
-	Area                float64            `json:"area"`
-	Severity            string             `json:"severity"`
-	SeverityType        string             `json:"severity_type"`
-	ImageUrl            pgtype.Text        `json:"image_url"`
-	CreatedAt           time.Time          `json:"created_at"`
-	District            pgtype.Text        `json:"district"`
-	SeverityScore       pgtype.Int4        `json:"severity_score"`
-	AllViolationTypes   pgtype.Text        `json:"all_violation_types"`
-	LastSeen            pgtype.Timestamptz `json:"last_seen"`
-	ProximityToWater    bool               `json:"proximity_to_water"`
-	InsideForestReserve bool               `json:"inside_forest_reserve"`
-	DetectionDate       pgtype.Date        `json:"detection_date"`
-}
-
-type MiningStatic struct {
-	ID                  string           `json:"id"`
-	Geom                interface{}      `json:"geom"`
-	Area                pgtype.Float8    `json:"area"`
-	Status              pgtype.Text      `json:"status"`
-	Severity            pgtype.Text      `json:"severity"`
-	SeverityType        pgtype.Text      `json:"severity_type"`
-	SeverityScore       pgtype.Int8      `json:"severity_score"`
-	ProximityToWater    pgtype.Bool      `json:"proximity_to_water"`
-	InsideForestReserve pgtype.Bool      `json:"inside_forest_reserve"`
-	DetectionDate       pgtype.Timestamp `json:"detection_date"`
-	ImageUrl            pgtype.Text      `json:"image_url"`
-	AllViolationTypes   pgtype.Text      `json:"all_violation_types"`
-	District            pgtype.Text      `json:"district"`
-	TaskID              uuid.UUID        `json:"task_id"`
-	DistanceToWaterM    pgtype.Float8    `json:"distance_to_water_m"`
-	DistanceToForestM   pgtype.Float8    `json:"distance_to_forest_m"`
-}
-
-type Notifications struct {
-	ID                uuid.UUID          `json:"id"`
-	AccountID         pgtype.UUID        `json:"account_id"`
-	Message           string             `json:"message"`
-	Type              string             `json:"type"`
-	RelatedEntityID   pgtype.UUID        `json:"related_entity_id"`
-	RelatedEntityType pgtype.Text        `json:"related_entity_type"`
-	IsRead            bool               `json:"is_read"`
-	CreatedAt         time.Time          `json:"created_at"`
-	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
-}
-
-type Preferences struct {
-	AccountID            uuid.UUID        `json:"account_id"`
-	Units                pgtype.Text      `json:"units"`
-	AppTheme             pgtype.Text      `json:"app_theme"`
-	DefaultMapView       []byte           `json:"default_map_view"`
-	CoordinateFormat     pgtype.Text      `json:"coordinate_format"`
-	NotificationsEnabled pgtype.Bool      `json:"notifications_enabled"`
-	CreatedAt            pgtype.Timestamp `json:"created_at"`
-	UpdatedAt            pgtype.Timestamp `json:"updated_at"`
-}
-
-type Reports struct {
-	ID          uuid.UUID   `json:"id"`
-	Location    interface{} `json:"location"`
-	Locality    pgtype.Text `json:"locality"`
-	Title       pgtype.Text `json:"title"`
-	Description pgtype.Text `json:"description"`
-	Severity    string      `json:"severity"`
-	Status      string      `json:"status"`
-	ClientIp    string      `json:"client_ip"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
-}
-
-type Rivers struct {
-	ID      pgtype.Int8 `json:"id"`
-	OrigFid pgtype.Int8 `json:"orig_fid"`
-	Geom    interface{} `json:"geom"`
+	FirstName    pgtype.Text `json:"first_name"`
+	LastName     pgtype.Text `json:"last_name"`
+	Username     pgtype.Text `json:"username"`
+	Email        string      `json:"email"`
+	Password     string      `json:"password"`
+	ProfileUrl   pgtype.Text `json:"profile_url"`
+	Status       string      `json:"status"`
+	Role         string      `json:"role"`
+	Is2faEnabled pgtype.Bool `json:"is_2fa_enabled"`
+	OtpCode      pgtype.Text `json:"otp_code"`
+	OtpExpiresAt pgtype.Text `json:"otp_expires_at"`
+	IsApproved   bool        `json:"is_approved"`
+	IsVerified   bool        `json:"is_verified"`
+	CreatedAt    time.Time   `json:"created_at"`
+	LastActive   time.Time   `json:"last_active"`
+	UpdatedAt    time.Time   `json:"updated_at"`
 }
 
 type Session struct {
@@ -154,16 +40,4 @@ type Session struct {
 	IsBlocked    bool      `json:"is_blocked"`
 	ExpiresAt    time.Time `json:"expires_at"`
 	CreatedAt    time.Time `json:"created_at"`
-}
-
-type Tasks struct {
-	ID          uuid.UUID   `json:"id"`
-	Type        string      `json:"type"`
-	Status      string      `json:"status"`
-	Description pgtype.Text `json:"description"`
-	AoiName     string      `json:"aoi_name"`
-	AoiBbox     interface{} `json:"aoi_bbox"`
-	ImageDate   pgtype.Text `json:"image_date"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
 }

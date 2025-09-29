@@ -7,7 +7,6 @@ package database
 
 import (
 	"context"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -28,54 +27,48 @@ func (q *Queries) ClearAccountOTP(ctx context.Context, id uuid.UUID) error {
 
 const createAccount = `-- name: CreateAccount :one
 INSERT INTO "accounts" (
-    email, first_name, last_name, department,role, status, signup_token, signup_token_expires_at
+    email, password, first_name, last_name, username  
 ) VALUES (
-    $1, $2, $3, $4, $5, 'PENDING', $6, $7
+    $1, $2, $3, $4, $5
 )
-RETURNING id, first_name, last_name, user_name, email, department, password, status, role, is_2fa_enabled, signup_token, signup_token_expires_at, otp_code, otp_expires_at, is_approved, created_at, last_active, updated_at, profile_url
+RETURNING id, first_name, last_name, username, email, password, profile_url, status, role, is_2fa_enabled, otp_code, otp_expires_at, is_approved, is_verified, created_at, last_active, updated_at
 `
 
 type CreateAccountParams struct {
-	Email                string      `json:"email"`
-	FirstName            pgtype.Text `json:"first_name"`
-	LastName             pgtype.Text `json:"last_name"`
-	Department           string      `json:"department"`
-	Role                 string      `json:"role"`
-	SignupToken          pgtype.Text `json:"signup_token"`
-	SignupTokenExpiresAt pgtype.Text `json:"signup_token_expires_at"`
+	Email     string      `json:"email"`
+	Password  string      `json:"password"`
+	FirstName pgtype.Text `json:"first_name"`
+	LastName  pgtype.Text `json:"last_name"`
+	Username  pgtype.Text `json:"username"`
 }
 
 func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (Accounts, error) {
 	row := q.db.QueryRow(ctx, createAccount,
 		arg.Email,
+		arg.Password,
 		arg.FirstName,
 		arg.LastName,
-		arg.Department,
-		arg.Role,
-		arg.SignupToken,
-		arg.SignupTokenExpiresAt,
+		arg.Username,
 	)
 	var i Accounts
 	err := row.Scan(
 		&i.ID,
 		&i.FirstName,
 		&i.LastName,
-		&i.UserName,
+		&i.Username,
 		&i.Email,
-		&i.Department,
 		&i.Password,
+		&i.ProfileUrl,
 		&i.Status,
 		&i.Role,
 		&i.Is2faEnabled,
-		&i.SignupToken,
-		&i.SignupTokenExpiresAt,
 		&i.OtpCode,
 		&i.OtpExpiresAt,
 		&i.IsApproved,
+		&i.IsVerified,
 		&i.CreatedAt,
 		&i.LastActive,
 		&i.UpdatedAt,
-		&i.ProfileUrl,
 	)
 	return i, err
 }
@@ -91,7 +84,7 @@ func (q *Queries) DeleteAccount(ctx context.Context, id uuid.UUID) error {
 }
 
 const getAccount = `-- name: GetAccount :one
-SELECT id, first_name, last_name, user_name, email, department, password, status, role, is_2fa_enabled, signup_token, signup_token_expires_at, otp_code, otp_expires_at, is_approved, created_at, last_active, updated_at, profile_url FROM "accounts"
+SELECT id, first_name, last_name, username, email, password, profile_url, status, role, is_2fa_enabled, otp_code, otp_expires_at, is_approved, is_verified, created_at, last_active, updated_at FROM "accounts"
 WHERE id = $1
 `
 
@@ -102,28 +95,26 @@ func (q *Queries) GetAccount(ctx context.Context, id uuid.UUID) (Accounts, error
 		&i.ID,
 		&i.FirstName,
 		&i.LastName,
-		&i.UserName,
+		&i.Username,
 		&i.Email,
-		&i.Department,
 		&i.Password,
+		&i.ProfileUrl,
 		&i.Status,
 		&i.Role,
 		&i.Is2faEnabled,
-		&i.SignupToken,
-		&i.SignupTokenExpiresAt,
 		&i.OtpCode,
 		&i.OtpExpiresAt,
 		&i.IsApproved,
+		&i.IsVerified,
 		&i.CreatedAt,
 		&i.LastActive,
 		&i.UpdatedAt,
-		&i.ProfileUrl,
 	)
 	return i, err
 }
 
 const getAccountByEmail = `-- name: GetAccountByEmail :one
-SELECT id, first_name, last_name, user_name, email, department, password, status, role, is_2fa_enabled, signup_token, signup_token_expires_at, otp_code, otp_expires_at, is_approved, created_at, last_active, updated_at, profile_url FROM "accounts"
+SELECT id, first_name, last_name, username, email, password, profile_url, status, role, is_2fa_enabled, otp_code, otp_expires_at, is_approved, is_verified, created_at, last_active, updated_at FROM "accounts"
 WHERE LOWER(email) = LOWER($1)
 `
 
@@ -134,101 +125,20 @@ func (q *Queries) GetAccountByEmail(ctx context.Context, lower string) (Accounts
 		&i.ID,
 		&i.FirstName,
 		&i.LastName,
-		&i.UserName,
+		&i.Username,
 		&i.Email,
-		&i.Department,
 		&i.Password,
+		&i.ProfileUrl,
 		&i.Status,
 		&i.Role,
 		&i.Is2faEnabled,
-		&i.SignupToken,
-		&i.SignupTokenExpiresAt,
 		&i.OtpCode,
 		&i.OtpExpiresAt,
 		&i.IsApproved,
+		&i.IsVerified,
 		&i.CreatedAt,
 		&i.LastActive,
 		&i.UpdatedAt,
-		&i.ProfileUrl,
-	)
-	return i, err
-}
-
-const getAccountByResetToken = `-- name: GetAccountByResetToken :one
-SELECT id, first_name, last_name, user_name, email, password, role, department, created_at, updated_at, status, signup_token, signup_token_expires_at, otp_code, otp_expires_at
-FROM "accounts"
-WHERE signup_token = $1
-`
-
-type GetAccountByResetTokenRow struct {
-	ID                   uuid.UUID   `json:"id"`
-	FirstName            pgtype.Text `json:"first_name"`
-	LastName             pgtype.Text `json:"last_name"`
-	UserName             pgtype.Text `json:"user_name"`
-	Email                string      `json:"email"`
-	Password             pgtype.Text `json:"password"`
-	Role                 string      `json:"role"`
-	Department           string      `json:"department"`
-	CreatedAt            time.Time   `json:"created_at"`
-	UpdatedAt            time.Time   `json:"updated_at"`
-	Status               string      `json:"status"`
-	SignupToken          pgtype.Text `json:"signup_token"`
-	SignupTokenExpiresAt pgtype.Text `json:"signup_token_expires_at"`
-	OtpCode              pgtype.Text `json:"otp_code"`
-	OtpExpiresAt         pgtype.Text `json:"otp_expires_at"`
-}
-
-func (q *Queries) GetAccountByResetToken(ctx context.Context, signupToken pgtype.Text) (GetAccountByResetTokenRow, error) {
-	row := q.db.QueryRow(ctx, getAccountByResetToken, signupToken)
-	var i GetAccountByResetTokenRow
-	err := row.Scan(
-		&i.ID,
-		&i.FirstName,
-		&i.LastName,
-		&i.UserName,
-		&i.Email,
-		&i.Password,
-		&i.Role,
-		&i.Department,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.Status,
-		&i.SignupToken,
-		&i.SignupTokenExpiresAt,
-		&i.OtpCode,
-		&i.OtpExpiresAt,
-	)
-	return i, err
-}
-
-const getAccountBySignupToken = `-- name: GetAccountBySignupToken :one
-SELECT id, first_name, last_name, user_name, email, department, password, status, role, is_2fa_enabled, signup_token, signup_token_expires_at, otp_code, otp_expires_at, is_approved, created_at, last_active, updated_at, profile_url FROM "accounts"
-WHERE signup_token = $1
-`
-
-func (q *Queries) GetAccountBySignupToken(ctx context.Context, signupToken pgtype.Text) (Accounts, error) {
-	row := q.db.QueryRow(ctx, getAccountBySignupToken, signupToken)
-	var i Accounts
-	err := row.Scan(
-		&i.ID,
-		&i.FirstName,
-		&i.LastName,
-		&i.UserName,
-		&i.Email,
-		&i.Department,
-		&i.Password,
-		&i.Status,
-		&i.Role,
-		&i.Is2faEnabled,
-		&i.SignupToken,
-		&i.SignupTokenExpiresAt,
-		&i.OtpCode,
-		&i.OtpExpiresAt,
-		&i.IsApproved,
-		&i.CreatedAt,
-		&i.LastActive,
-		&i.UpdatedAt,
-		&i.ProfileUrl,
 	)
 	return i, err
 }
@@ -261,22 +171,57 @@ func (q *Queries) GetAccountMetrics(ctx context.Context) (GetAccountMetricsRow, 
 	return i, err
 }
 
+const getProfile = `-- name: GetProfile :one
+SELECT id, first_name, last_name, username, profile_url, email,  role, is_2fa_enabled, is_approved, password
+FROM accounts
+WHERE id = $1
+`
+
+type GetProfileRow struct {
+	ID           uuid.UUID   `json:"id"`
+	FirstName    pgtype.Text `json:"first_name"`
+	LastName     pgtype.Text `json:"last_name"`
+	Username     pgtype.Text `json:"username"`
+	ProfileUrl   pgtype.Text `json:"profile_url"`
+	Email        string      `json:"email"`
+	Role         string      `json:"role"`
+	Is2faEnabled pgtype.Bool `json:"is_2fa_enabled"`
+	IsApproved   bool        `json:"is_approved"`
+	Password     string      `json:"password"`
+}
+
+func (q *Queries) GetProfile(ctx context.Context, id uuid.UUID) (GetProfileRow, error) {
+	row := q.db.QueryRow(ctx, getProfile, id)
+	var i GetProfileRow
+	err := row.Scan(
+		&i.ID,
+		&i.FirstName,
+		&i.LastName,
+		&i.Username,
+		&i.ProfileUrl,
+		&i.Email,
+		&i.Role,
+		&i.Is2faEnabled,
+		&i.IsApproved,
+		&i.Password,
+	)
+	return i, err
+}
+
 const listAccounts = `-- name: ListAccounts :many
-SELECT id, first_name, last_name, user_name, email, department, password, status, role, is_2fa_enabled, signup_token, signup_token_expires_at, otp_code, otp_expires_at, is_approved, created_at, last_active, updated_at, profile_url
+SELECT id, first_name, last_name, username, email, password, profile_url, status, role, is_2fa_enabled, otp_code, otp_expires_at, is_approved, is_verified, created_at, last_active, updated_at
 FROM accounts
 WHERE
   (($3::varchar IS NULL OR $3::varchar = '') OR role::varchar = $3::varchar)
 AND (($4::varchar IS NULL OR $4::varchar = '') OR status::varchar = $4::varchar)
-AND (($5::varchar IS NULL OR $5::varchar = '') OR department::varchar = $5::varchar)
 LIMIT $1 OFFSET $2
 `
 
 type ListAccountsParams struct {
-	Limit      int32  `json:"limit"`
-	Offset     int32  `json:"offset"`
-	Role       string `json:"role"`
-	Status     string `json:"status"`
-	Department string `json:"department"`
+	Limit  int32  `json:"limit"`
+	Offset int32  `json:"offset"`
+	Role   string `json:"role"`
+	Status string `json:"status"`
 }
 
 func (q *Queries) ListAccounts(ctx context.Context, arg ListAccountsParams) ([]Accounts, error) {
@@ -285,7 +230,6 @@ func (q *Queries) ListAccounts(ctx context.Context, arg ListAccountsParams) ([]A
 		arg.Offset,
 		arg.Role,
 		arg.Status,
-		arg.Department,
 	)
 	if err != nil {
 		return nil, err
@@ -298,22 +242,20 @@ func (q *Queries) ListAccounts(ctx context.Context, arg ListAccountsParams) ([]A
 			&i.ID,
 			&i.FirstName,
 			&i.LastName,
-			&i.UserName,
+			&i.Username,
 			&i.Email,
-			&i.Department,
 			&i.Password,
+			&i.ProfileUrl,
 			&i.Status,
 			&i.Role,
 			&i.Is2faEnabled,
-			&i.SignupToken,
-			&i.SignupTokenExpiresAt,
 			&i.OtpCode,
 			&i.OtpExpiresAt,
 			&i.IsApproved,
+			&i.IsVerified,
 			&i.CreatedAt,
 			&i.LastActive,
 			&i.UpdatedAt,
-			&i.ProfileUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -323,46 +265,6 @@ func (q *Queries) ListAccounts(ctx context.Context, arg ListAccountsParams) ([]A
 		return nil, err
 	}
 	return items, nil
-}
-
-const updateAccountDepartment = `-- name: UpdateAccountDepartment :one
-UPDATE "accounts"
-SET department = $2,
-    updated_at = now()
-WHERE id = $1
-RETURNING id, first_name, last_name, user_name, email, department, password, status, role, is_2fa_enabled, signup_token, signup_token_expires_at, otp_code, otp_expires_at, is_approved, created_at, last_active, updated_at, profile_url
-`
-
-type UpdateAccountDepartmentParams struct {
-	ID         uuid.UUID `json:"id"`
-	Department string    `json:"department"`
-}
-
-func (q *Queries) UpdateAccountDepartment(ctx context.Context, arg UpdateAccountDepartmentParams) (Accounts, error) {
-	row := q.db.QueryRow(ctx, updateAccountDepartment, arg.ID, arg.Department)
-	var i Accounts
-	err := row.Scan(
-		&i.ID,
-		&i.FirstName,
-		&i.LastName,
-		&i.UserName,
-		&i.Email,
-		&i.Department,
-		&i.Password,
-		&i.Status,
-		&i.Role,
-		&i.Is2faEnabled,
-		&i.SignupToken,
-		&i.SignupTokenExpiresAt,
-		&i.OtpCode,
-		&i.OtpExpiresAt,
-		&i.IsApproved,
-		&i.CreatedAt,
-		&i.LastActive,
-		&i.UpdatedAt,
-		&i.ProfileUrl,
-	)
-	return i, err
 }
 
 const updateAccountLastActive = `-- name: UpdateAccountLastActive :exec
@@ -398,16 +300,14 @@ func (q *Queries) UpdateAccountOTP(ctx context.Context, arg UpdateAccountOTPPara
 const updateAccountPassword = `-- name: UpdateAccountPassword :one
 UPDATE "accounts"
 SET password = $2,
-    signup_token = NULL,
-    signup_token_expires_at = NULL,
     updated_at = now()
 WHERE id = $1
-RETURNING id, first_name, last_name, user_name, email, department, password, status, role, is_2fa_enabled, signup_token, signup_token_expires_at, otp_code, otp_expires_at, is_approved, created_at, last_active, updated_at, profile_url
+RETURNING id, first_name, last_name, username, email, password, profile_url, status, role, is_2fa_enabled, otp_code, otp_expires_at, is_approved, is_verified, created_at, last_active, updated_at
 `
 
 type UpdateAccountPasswordParams struct {
-	ID       uuid.UUID   `json:"id"`
-	Password pgtype.Text `json:"password"`
+	ID       uuid.UUID `json:"id"`
+	Password string    `json:"password"`
 }
 
 func (q *Queries) UpdateAccountPassword(ctx context.Context, arg UpdateAccountPasswordParams) (Accounts, error) {
@@ -417,43 +317,22 @@ func (q *Queries) UpdateAccountPassword(ctx context.Context, arg UpdateAccountPa
 		&i.ID,
 		&i.FirstName,
 		&i.LastName,
-		&i.UserName,
+		&i.Username,
 		&i.Email,
-		&i.Department,
 		&i.Password,
+		&i.ProfileUrl,
 		&i.Status,
 		&i.Role,
 		&i.Is2faEnabled,
-		&i.SignupToken,
-		&i.SignupTokenExpiresAt,
 		&i.OtpCode,
 		&i.OtpExpiresAt,
 		&i.IsApproved,
+		&i.IsVerified,
 		&i.CreatedAt,
 		&i.LastActive,
 		&i.UpdatedAt,
-		&i.ProfileUrl,
 	)
 	return i, err
-}
-
-const updateAccountResetToken = `-- name: UpdateAccountResetToken :exec
-UPDATE "accounts"
-SET signup_token = $2,
-    signup_token_expires_at = $3,
-    updated_at = now()
-WHERE LOWER( email ) = LOWER( $1 )
-`
-
-type UpdateAccountResetTokenParams struct {
-	Lower                string      `json:"lower"`
-	SignupToken          pgtype.Text `json:"signup_token"`
-	SignupTokenExpiresAt pgtype.Text `json:"signup_token_expires_at"`
-}
-
-func (q *Queries) UpdateAccountResetToken(ctx context.Context, arg UpdateAccountResetTokenParams) error {
-	_, err := q.db.Exec(ctx, updateAccountResetToken, arg.Lower, arg.SignupToken, arg.SignupTokenExpiresAt)
-	return err
 }
 
 const updateAccountRole = `-- name: UpdateAccountRole :one
@@ -461,7 +340,7 @@ UPDATE "accounts"
 SET role = $2,
     updated_at = now()
 WHERE id = $1
-RETURNING id, first_name, last_name, user_name, email, department, password, status, role, is_2fa_enabled, signup_token, signup_token_expires_at, otp_code, otp_expires_at, is_approved, created_at, last_active, updated_at, profile_url
+RETURNING id, first_name, last_name, username, email, password, profile_url, status, role, is_2fa_enabled, otp_code, otp_expires_at, is_approved, is_verified, created_at, last_active, updated_at
 `
 
 type UpdateAccountRoleParams struct {
@@ -476,83 +355,20 @@ func (q *Queries) UpdateAccountRole(ctx context.Context, arg UpdateAccountRolePa
 		&i.ID,
 		&i.FirstName,
 		&i.LastName,
-		&i.UserName,
+		&i.Username,
 		&i.Email,
-		&i.Department,
 		&i.Password,
+		&i.ProfileUrl,
 		&i.Status,
 		&i.Role,
 		&i.Is2faEnabled,
-		&i.SignupToken,
-		&i.SignupTokenExpiresAt,
 		&i.OtpCode,
 		&i.OtpExpiresAt,
 		&i.IsApproved,
+		&i.IsVerified,
 		&i.CreatedAt,
 		&i.LastActive,
 		&i.UpdatedAt,
-		&i.ProfileUrl,
-	)
-	return i, err
-}
-
-const updateAccountSetup = `-- name: UpdateAccountSetup :one
-UPDATE "accounts"
-SET first_name = $2,
-last_name = $3,
-user_name = $4,
-    password = $5,
-    status = $6,
-is_approved = $7,
-    signup_token = NULL,
-    signup_token_expires_at = NULL,
-    updated_at = now(),
-    last_active = now()
-WHERE id = $1
-RETURNING id, first_name, last_name, user_name, email, department, password, status, role, is_2fa_enabled, signup_token, signup_token_expires_at, otp_code, otp_expires_at, is_approved, created_at, last_active, updated_at, profile_url
-`
-
-type UpdateAccountSetupParams struct {
-	ID         uuid.UUID   `json:"id"`
-	FirstName  pgtype.Text `json:"first_name"`
-	LastName   pgtype.Text `json:"last_name"`
-	UserName   pgtype.Text `json:"user_name"`
-	Password   pgtype.Text `json:"password"`
-	Status     string      `json:"status"`
-	IsApproved bool        `json:"is_approved"`
-}
-
-func (q *Queries) UpdateAccountSetup(ctx context.Context, arg UpdateAccountSetupParams) (Accounts, error) {
-	row := q.db.QueryRow(ctx, updateAccountSetup,
-		arg.ID,
-		arg.FirstName,
-		arg.LastName,
-		arg.UserName,
-		arg.Password,
-		arg.Status,
-		arg.IsApproved,
-	)
-	var i Accounts
-	err := row.Scan(
-		&i.ID,
-		&i.FirstName,
-		&i.LastName,
-		&i.UserName,
-		&i.Email,
-		&i.Department,
-		&i.Password,
-		&i.Status,
-		&i.Role,
-		&i.Is2faEnabled,
-		&i.SignupToken,
-		&i.SignupTokenExpiresAt,
-		&i.OtpCode,
-		&i.OtpExpiresAt,
-		&i.IsApproved,
-		&i.CreatedAt,
-		&i.LastActive,
-		&i.UpdatedAt,
-		&i.ProfileUrl,
 	)
 	return i, err
 }
@@ -562,7 +378,7 @@ UPDATE "accounts"
 SET status = $2,
     updated_at = now()
 WHERE id = $1
-RETURNING id, first_name, last_name, user_name, email, department, password, status, role, is_2fa_enabled, signup_token, signup_token_expires_at, otp_code, otp_expires_at, is_approved, created_at, last_active, updated_at, profile_url
+RETURNING id, first_name, last_name, username, email, password, profile_url, status, role, is_2fa_enabled, otp_code, otp_expires_at, is_approved, is_verified, created_at, last_active, updated_at
 `
 
 type UpdateAccountStatusParams struct {
@@ -577,22 +393,38 @@ func (q *Queries) UpdateAccountStatus(ctx context.Context, arg UpdateAccountStat
 		&i.ID,
 		&i.FirstName,
 		&i.LastName,
-		&i.UserName,
+		&i.Username,
 		&i.Email,
-		&i.Department,
 		&i.Password,
+		&i.ProfileUrl,
 		&i.Status,
 		&i.Role,
 		&i.Is2faEnabled,
-		&i.SignupToken,
-		&i.SignupTokenExpiresAt,
 		&i.OtpCode,
 		&i.OtpExpiresAt,
 		&i.IsApproved,
+		&i.IsVerified,
 		&i.CreatedAt,
 		&i.LastActive,
 		&i.UpdatedAt,
-		&i.ProfileUrl,
 	)
 	return i, err
+}
+
+const updatePassword = `-- name: UpdatePassword :exec
+UPDATE accounts
+SET
+    password = $2,
+    updated_at = now()
+WHERE id = $1
+`
+
+type UpdatePasswordParams struct {
+	ID       uuid.UUID `json:"id"`
+	Password string    `json:"password"`
+}
+
+func (q *Queries) UpdatePassword(ctx context.Context, arg UpdatePasswordParams) error {
+	_, err := q.db.Exec(ctx, updatePassword, arg.ID, arg.Password)
+	return err
 }
