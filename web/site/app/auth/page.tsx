@@ -109,7 +109,7 @@ export default function AuthPage() {
     <div className="min-h-screen bg-gradient-to-br from-violet-900 via-indigo-900 to-sky-900 shimmer-bg">
       <section className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 hero-gradient overflow-hidden">
         {/* Fancy back button */}
-        <div className="absolute top-20 left-4 z-20 sm:top-24">
+        <div className="absolute top-16 left-4 z-20 sm:top-24">
           <Link
             href="/"
             className="inline-flex items-center gap-2 rounded-full px-4 py-2 bg-white/10 border border-white/20 text-white backdrop-blur-sm hover:bg-white/20 transition-colors text-sm font-semibold shadow-soft"

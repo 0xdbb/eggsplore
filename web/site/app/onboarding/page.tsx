@@ -24,7 +24,7 @@ export default function OnboardingPage() {
         try {
           sessionStorage.setItem("user_location", JSON.stringify({ latitude, longitude }));
         } catch {}
-        toast.success("Location acquired! Let's go to the map.");
+        toast.success("Location acquired! Let the adventure begin!.");
         router.push("/map");
       },
       (err) => {
@@ -64,7 +64,7 @@ export default function OnboardingPage() {
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="inline-flex items-center gap-2 px-6 py-4 rounded-full bg-gradient-to-r from-rose-400 via-pink-400 to-amber-300 text-white font-semibold shadow-2xl hover:scale-105 transition-transform"
+                  className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-gradient-to-r from-rose-400 via-pink-400 to-amber-300 text-white font-semibold shadow-2xl hover:scale-105 transition-transform"
                 >
                   Next
                 </button>
@@ -85,14 +85,14 @@ export default function OnboardingPage() {
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white/10 border border-white/20 text-white hover:bg-white/20"
+                  className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/10 border border-white/20 text-white hover:bg-white/20"
                 >
                   Back
                 </button>
                 <button
                   type="button"
                   onClick={() => setStep(3)}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-rose-400 via-pink-400 to-amber-300 text-white font-semibold shadow-2xl hover:scale-105 transition-transform"
+                  className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-gradient-to-r from-rose-400 via-pink-400 to-amber-300 text-white font-semibold shadow-2xl hover:scale-105 transition-transform"
                 >
                   Next
                 </button>
@@ -114,7 +114,7 @@ export default function OnboardingPage() {
                   type="button"
                   onClick={handleDropEgg}
                   disabled={locating}
-                  className={`inline-flex items-center gap-2 px-6 py-4 rounded-full bg-gradient-to-r from-rose-400 via-pink-400 to-amber-300 text-white font-semibold shadow-2xl transition-transform ${locating ? "opacity-70" : "hover:scale-105"}`}
+                  className={`inline-flex items-center gap-2 px-6 py-2 rounded-full bg-gradient-to-r from-rose-400 via-pink-400 to-amber-300 text-white font-semibold shadow-2xl transition-transform ${locating ? "opacity-70" : "hover:scale-105"}`}
                 >
                   <MapPin className="w-5 h-5" /> {locating ? "Locating..." : "Drop Egg Here"}
                 </button>
@@ -127,7 +127,7 @@ export default function OnboardingPage() {
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white/10 border border-white/20 text-white hover:bg-white/20"
+                  className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/10 border border-white/20 text-white hover:bg-white/20"
                 >
                   Back
                 </button>

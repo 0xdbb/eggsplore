@@ -5,26 +5,33 @@ import { MapPin, Zap, Trophy, Play, Users, Star, ArrowRight, Egg, Sparkles } fro
 import Image from 'next/image';
 import Link from 'next/link';
 import HowItWorks from '../components/HowItWorks';
+import { useAuthStore } from '../lib/store';
 
 export default function HomePage() {
   const [isSignUpHovered, setIsSignUpHovered] = useState(false);
   const [isSignInHovered, setIsSignInHovered] = useState(false);
   const [isFinalCtaHovered, setIsFinalCtaHovered] = useState(false);
+  const user = useAuthStore((s) => s.user);
+  const session = useAuthStore((s) => s.session);
+  const cookieAuthed = typeof document !== 'undefined' && document.cookie.includes('access_token=');
+  const isAuthed = !!(user?.id || session?.accessToken || cookieAuthed);
 
   return (
     <div className="min-h-screen hero-gradient shimmer-bg overflow-x-hidden">
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 overflow-hidden">
-        {/* Login button (top-right) */}
-        <div className="absolute top-4 right-4 z-20">
-          <Link
-            href="/auth"
-            className="inline-flex items-center gap-2 rounded-full px-5 py-2 bg-white/10 border border-white/20 text-white backdrop-blur-sm hover:bg-white/20 transition-colors text-sm font-semibold shadow-soft"
-          >
-            Login
-          </Link>
-        </div>
+        {/* Login button (top-right) — hidden if authenticated */}
+        {!isAuthed && (
+          <div className="absolute top-4 right-4 z-20">
+            <Link
+              href="/auth"
+              className="inline-flex items-center gap-2 rounded-full px-5 py-2 bg-white/10 border border-white/20 text-white backdrop-blur-sm hover:bg-white/20 transition-colors text-sm font-semibold shadow-soft"
+            >
+              Login
+            </Link>
+          </div>
+        )}
         {/* Floating background eggs inside the hero (behind content) */}
         <div className="pointer-events-none absolute inset-0 opacity-30 z-0">
           <div className="absolute top-20 left-10 w-16 h-16 bg-gradient-egg rounded-full animate-float" style={{ animationDelay: '0s' }}></div>
@@ -59,7 +66,7 @@ export default function HomePage() {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <Link
-            href="/auth"
+            href={isAuthed ? "/home" : "/auth"}
             onMouseEnter={() => setIsFinalCtaHovered(true)}
             onMouseLeave={() => setIsFinalCtaHovered(false)}
             className={`inline-flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-rose-400 via-pink-400 to-amber-300 text-white font-bold text-xl rounded-full shadow-2xl transform transition-all duration-300 hover:scale-105 hover:shadow-rose-400/25 ${isFinalCtaHovered ? 'scale-105' : ''}`}
@@ -79,7 +86,7 @@ export default function HomePage() {
       </section>
 
       {/* How It Works */}
-      <HowItWorks />
+      <HowItWorks isAuthed={isAuthed} />
 
   
 

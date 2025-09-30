@@ -4,7 +4,8 @@ export type ApiOptions = {
 };
 
 // Align with server base path
-const DEFAULT_BASE_URL = "http://localhost:8080/api/v1";
+const DEFAULT_BASE_URL = "http://192.168.1.201:8080/api/v1";
+// const DEFAULT_BASE_URL = "http://localhost:8080/api/v1";
 
 async function request<T>(
   path: string,

@@ -1,8 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  // If you plan to use images from external domains, configure images.domains here
-  // images: { domains: ['example.com'] },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  images: {
+    unoptimized: true,
+  },
 };
 
 export default nextConfig;
+

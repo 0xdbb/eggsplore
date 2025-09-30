@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowLeft, MapPin, X, Egg as EggIcon, Hammer, Wrench, Shield, Crosshair } from "lucide-react";
+import { Home as HomeIcon, MapPin, X, Egg as EggIcon, Hammer, Wrench, Shield, Crosshair, ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import { useAuthStore } from "../../lib/store";
 // MapLibre styles
@@ -122,10 +122,12 @@ export default function MapPage() {
       {/* Back Home */}
       <div className="absolute top-4 left-4 z-30">
         <Link
-          href="/"
-          className="inline-flex items-center gap-2 rounded-full px-4 py-2 bg-white/40 border border-white/40 text-white backdrop-blur-sm hover:bg-white/50 transition-colors text-sm font-semibold shadow-soft"
+          href="/home"
+          className="inline-flex items-center gap-2 rounded-full px-3 py-2 bg-card border border-border text-foreground shadow-soft hover:bg-card/90 transition-colors"
+          aria-label="Home"
         >
-          <ArrowLeft className="w-4 h-4" /> Home
+          <ArrowLeft className="w-4 h-4" />
+          <HomeIcon className="w-5 h-5" />
         </Link>
       </div>
 
@@ -143,12 +145,12 @@ export default function MapPage() {
         <Map
           reuseMaps
           mapLib={maplibregl as any}
-          mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+          mapStyle={`https://api.maptiler.com/maps/bright/style.json?key=UwuFWdaIhrBHOXfSu24X`}
         />
       </DeckGL>
 
       {/* XP Badge (top-right) */}
-      <div className="absolute top-4 right-4 z-30 inline-flex items-center gap-2 rounded-full px-4 py-2 bg-card border border-border text-foreground shadow-soft">
+      <div className="absolute top-4 right-4 z-30 inline-flex items-center gap-2 rounded-full px-4 py-2 bg-card/50 border border-border text-foreground shadow-soft">
         <span className="text-xs opacity-80">XP</span>
         <span className="font-semibold">{xp}</span>
       </div>
@@ -156,7 +158,7 @@ export default function MapPage() {
       {/* Floating Add/Drop Egg button with hover-expand */
       }
       <button
-        className="group absolute right-4 bottom-24 md:bottom-8 z-30 inline-flex items-center rounded-full px-3 py-1 bg-gradient-to-r from-rose-400 via-pink-400 to-amber-300 text-white font-semibold shadow-2xl transition-[padding,opacity] hover:pr-5 hover:pl-4"
+        className="group absolute right-4 bottom-24 md:bottom-8 z-30 inline-flex items-center rounded-full px-2 pr-0 py-0 bg-gradient-to-r from-rose-400 via-pink-400 to-amber-300 text-white font-semibold shadow-2xl transition-[padding,opacity] hover:py-2 hover:pr-5 hover:pl-4"
         onClick={() => {
           // Placeholder: open a creation flow; for now, center on user
           setShowDropModal(true);
@@ -170,7 +172,7 @@ export default function MapPage() {
 
       {/* Center on user button */}
       <button
-        className="absolute left-4 bottom-24 md:bottom-8 z-30 inline-flex items-center rounded-full p-3 bg-card border border-border text-foreground shadow-soft hover:bg-white/10"
+        className="absolute left-4 bottom-24 md:bottom-8 z-30 inline-flex items-center rounded-full bg-card border border-border text-foreground shadow-soft hover:bg-white/10"
         onClick={() => {
           if (userPos) {
             setViewState((vs: any) => ({ ...vs, latitude: userPos.latitude, longitude: userPos.longitude, zoom: 15 }));
@@ -192,7 +194,7 @@ export default function MapPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              className="absolute top-3 right-3 rounded-md p-1.5 bg-white/10 border border-white/20 text-white hover:bg-white/20"
+              className="absolute top-3 right-3 rounded-md p-1.5  text-white hover:bg-white/20"
               onClick={() => setShowDropModal(false)}
               aria-label="Close"
             >
@@ -250,7 +252,7 @@ export default function MapPage() {
 
       {/* Mobile/Tablet drawer (bottom) - draggable height with panels */}
       <aside
-        className={`md:hidden absolute left-0 right-0 bottom-0 px-4 pt-2 pb-4 bg-card border-t border-border z-20 transition-transform`}
+        className={`absolute left-0 right-0 bottom-0 px-4 pt-2 pb-4 bg-card border-t border-border z-20 transition-transform`}
         style={{ height: drawerOpen ? mobileHeight : 48 }}
       >
         {/* Drag handle */}

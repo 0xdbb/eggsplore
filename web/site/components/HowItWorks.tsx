@@ -39,7 +39,7 @@ const steps: Step[] = [
   },
 ];
 
-export default function HowItWorks({ onStart }: { onStart?: () => void }) {
+export default function HowItWorks({ onStart, isAuthed }: { onStart?: () => void; isAuthed?: boolean }) {
   return (
     <section className="relative overflow-hidden py-24">
       {/* Floating background eggs to match hero */}
@@ -104,7 +104,7 @@ export default function HowItWorks({ onStart }: { onStart?: () => void }) {
 
         <div className="text-center">
           <Link
-            href="/auth"
+            href={isAuthed ? "/home" : "/auth"}
             className={`inline-flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-rose-400 via-pink-400 to-amber-300 text-white font-bold text-xl rounded-full shadow-2xl transform transition-all duration-300 hover:scale-105 hover:shadow-rose-400/25 `}
           >
             Start Your Quest

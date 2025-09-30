@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/0xdbb/eggsplore/util"
@@ -57,15 +58,10 @@ type SendOTPRequest struct {
 // setCookie sets a secure HTTP-only cookie
 
 func setCookie(ctx *gin.Context, name, value string, maxAge int) {
-	isLocal := ctx.Request.Host == "localhost:8080" || ctx.Request.Host == "127.0.0.1:8080"
+	isLocal := ctx.Request.Host == "localhost:8080" || ctx.Request.Host == "127.0.0.1:8080" || strings.Contains(ctx.Request.Host, ":8080")
 
 	domain := ""
-	secure := false
-
-	if !isLocal {
-		domain = ".blvcksapphire.com"
-		secure = true
-	}
+	secure := !isLocal
 
 	ctx.SetCookie(
 		name,

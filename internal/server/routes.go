@@ -43,8 +43,9 @@ func (s *Server) Cors() {
 	s.engine.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
 			"http://localhost:3000",
+			"http://192.168.1.201:3000",
 			"http://localhost:3001",
-			"https://hoppscotch.io", // Add Hoppscotch origin for testing
+			"https://eggsplore.netlify.app", // Add Hoppscotch origin for testing
 		},
 		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders: []string{
