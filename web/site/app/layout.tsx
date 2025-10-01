@@ -1,14 +1,12 @@
 export const metadata = {
-  title: 'Eggsplore.quest',
-  description: 'Hatch, Explore, Conquer',
+  title: 'Eggsplore',
+  description: 'Eggsplore and Touch Grass',
 };
 
 import './globals.css';
 import React from 'react';
 import { Chewy, Nunito } from 'next/font/google';
 import { Toaster } from 'sonner';
-import Link from 'next/link';
-import Image from 'next/image';
 import { ReactQueryProvider } from '../lib/queryClient';
 import ClientShell from '../components/ClientShell';
 
